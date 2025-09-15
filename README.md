@@ -17,6 +17,7 @@
 
 - **Python** - Para o núcleo do honeypot e a simulação do protocolo FTP.
 - **SQLite/MySQL** - Para armazenamento de dados de logs e tentativas de acesso.
+- **Request** - Para analise e informações de ip's.
 
 ---
 
