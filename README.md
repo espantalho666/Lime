@@ -29,3 +29,10 @@ Siga os passos abaixo para configurar o Lime no seu sistema.
 ```bash
 git clone https://github.com/espantalho666/Lime.git
 cd lime
+```
+
+### 2. Dentro da pasta Lime/
+
+```bash
+python3 server.py
+```
