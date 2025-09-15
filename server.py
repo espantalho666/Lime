@@ -16,7 +16,6 @@ class LimeFTPServer:
         self.running = False
 
     def start(self):
-        """Inicia o servidor FTP honeypot."""
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(8)
@@ -32,7 +31,6 @@ class LimeFTPServer:
             self.handle_client(self.client_socket, self.client_address)
 
     def stop(self):
-        """Para o servidor FTP."""
         self.running = False
         if self.server_socket:
             self.server_socket.close()
@@ -49,9 +47,8 @@ class LimeFTPServer:
                 if not data:
                     break
 
-                logging.info(f"Comando recebido de {client_address}: {data}")
+                logging.info(f"Command recieve from {client_address} -> {data}")
 
-                # Responde com uma simulação de comando FTP
                 if data.startswith('USER'):
                     client_socket.send(b"331 User name okay, need password.\r\n")
                     logging.info(f"Sent to {client_address} -> 331 User name okay")
@@ -81,8 +78,6 @@ class LimeFTPServer:
             self.stop()
         self.start()
 
-
-# Função para iniciar o servidor em uma thread separada
 def lime_server():
     lime = LimeFTPServer()
     try:
