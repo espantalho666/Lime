@@ -14,6 +14,10 @@ class LimeFTPServer:
         self.client_socket = None
         self.client_address = None
         self.running = False
+        self.valid_users = {
+            "root": "root",
+            "admin": "admin"
+            }
 
     def start(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,14 +25,16 @@ class LimeFTPServer:
         self.server_socket.listen(8)
         self.running = True
 
-        print(f'Honeypot FTP Server iniciado em {self.host}:{self.port}')
-        logging.info(f'Lime Server init {self.host}:{self.port}')
+        print(f'\nLime FTP server running: {self.host}:{self.port}')
+        logging.info(f'\nLime Server init {self.host}:{self.port}\n')
 
         while self.running:
             self.client_socket, self.client_address = self.server_socket.accept()
             print(f'New connection from {self.client_address}')
             logging.info(f'New connection from: {self.client_address}')
-            self.handle_client(self.client_socket, self.client_address)
+            client_thread = threading.Thread(target=self.handle_client, args=(self.client_socket, self.client_address))
+            client_thread.daemon = True
+            client_thread.start()
 
     def stop(self):
         self.running = False
@@ -39,10 +45,14 @@ class LimeFTPServer:
 
     def handle_client(self, client_socket, client_address):
         try:
+
             client_socket.send(b"220 ProFTPD 1.3.5 Server (Debian) Ready.\r\n")
             logging.info(f'Response sent to {client_address} -> 220 ProFTPD 1.3.5 Server (Debian) Ready.')
 
-            while True:
+            logged_in = False
+            username = None
+
+            while self.running:
                 data = client_socket.recv(1024).decode('utf-8').strip()
                 if not data:
                     break
@@ -50,13 +60,19 @@ class LimeFTPServer:
                 logging.info(f"Command recieve from {client_address} -> {data}")
 
                 if data.startswith('USER'):
+                    username = data.split(' ')[1]
                     client_socket.send(b"331 User name okay, need password.\r\n")
                     logging.info(f"Sent to {client_address} -> 331 User name okay")
 
-
                 elif data.startswith('PASS'):
-                    client_socket.send(b"230 User logged in, proceed.\r\n")
-                    logging.info(f"Sent to {client_address} -> 230 User logged in")
+                    password = data.split(' ')[1]
+                    if username in self.valid_users and self.valid_users[username] == password:
+                        logged_in = True
+                        client_socket.send(b"230 User logged in, proceed.\r\n")
+                        logging.info(f"Sent to {client_address} -> 230 User logged in")
+                    else:
+                        client_socket.send(b"530 Not logged in.\r\n")
+                        logging.info(f"Response sent to {client_address} -> 530 Not Logged in.")
 
                 elif data.startswith('QUIT'):
                     client_socket.send(b"221 Goodbye.\r\n")
@@ -64,7 +80,7 @@ class LimeFTPServer:
 
                 else:
                     client_socket.send(b"502 Command not implemented.\r\n")
-                    logging.info(f"Resposta para {client_address}: 502 Command not implemented")
+                    logging.info(f"Resposta para {client_address} -> 502 Command not implemented")
 
         except Exception as e:
             logging.error(f"Error trying to treat {client_address}: {e}")
