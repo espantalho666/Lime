@@ -45,7 +45,7 @@ class LimeFTPServer:
 
     def handle_client(self, client_socket, client_address):
         try:
-
+            client_socket.settimeout(60)
             client_socket.send(b"220 ProFTPD 1.3.5 Server (Debian) Ready.\r\n")
             logging.info(f'Response sent to {client_address} -> 220 ProFTPD 1.3.5 Server (Debian) Ready.')
 
@@ -53,9 +53,12 @@ class LimeFTPServer:
             username = None
 
             while self.running:
-                data = client_socket.recv(1024).decode('utf-8').strip()
-                if not data:
-                    break
+                try:
+                    data = client_socket.recv(1024).decode('utf-8').strip()
+                    if not data:
+                        break
+                except socket.timeout:
+                    logging.info(f'Connection with {client_address} timed out.')
 
                 logging.info(f"Command recieve from {client_address} -> {data}")
 
